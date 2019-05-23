@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name  }}
+  labels:
+    app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+    {{- end }}
+    spec:
+      containers:
+      - name: {{ .Release.Name  }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          privileged: true
+        ports:
+        - name: metrics
+          containerPort: 9435
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/config
+          name: config-volume
+        - mountPath: /sys/kernel/debug
+          name: kernel
+        - mountPath: /lib/modules/
+          name: modules
+      resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: ebpf-exporter
+          name: config-volume
+        - hostPath:
+            path: /sys/kernel/debug
+            type: Directory
+          name: kernel
+        - hostPath:
+            path: /lib/modules/
+            type: Directory
+          name: modules
