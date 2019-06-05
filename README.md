@@ -30,7 +30,6 @@ The following table lists the configurable parameters of the chart and their def
 
 Parameter | Description | Default
 --------- | ----------- | -------
-`namespace` | the namespace to create the resources in | `default`
 `image.repository` | image repository | `vanneback/ebpf-exporter`
 `image.tag` | image tag | `ubuntu`
 `image.pullPolicy` |  image pull policy | `IfNotPresent`

@@ -2,8 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-namespace: default
-
 image:
   repository: vanneback/ebpf-exporter
   tag: ubuntu
@@ -48,6 +46,11 @@ resources: {}
   #  cpu: 100m
   #  memory: 128Mi
 
+configMapFile: {}
+# specify file to overwrite the default one.
+# See templates/ebpf-exporter-conf.yaml or https://github.com/cloudflare/ebpf_exporter for 
+# Info on how to write the file.
+
 podAnnotations: {}
 
 nodeSelector: {}
@@ -55,8 +58,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-# specify file to overwrite the default one.
-# See templates/ebpf-exporter-conf.yaml or https://github.com/cloudflare/ebpf_exporter for 
-# Info on how to write the file.
-configMapFile: {}
