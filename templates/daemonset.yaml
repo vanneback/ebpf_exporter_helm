@@ -39,9 +39,17 @@ spec:
           name: kernel
         - mountPath: /lib/modules/
           name: modules
-      resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | trim | nindent 10 }}
       dnsPolicy: ClusterFirst
+      {{- if not (empty .Values.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | trim | nindent 8 }}
+      {{- end }}
+      {{- if not (empty .Values.tolerations) }}
+      tolerations:
+        {{- toYaml .Values.tolerations | trim | nindent 8 }}
+      {{- end }}
       restartPolicy: Always
       schedulerName: default-scheduler
       volumes:
