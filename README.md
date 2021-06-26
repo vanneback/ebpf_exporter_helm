@@ -47,6 +47,7 @@ Parameter | Description | Default
 `nodeSelector` | node selector rules | `{}`
 `tolerations` | node tolerations | `[]`
 `affinity` | pod affinity rules | `{}`
+`command` | supply alternate command to container | `{}`
 `volumes` | additional volumes for the daemonset | `{}`
 `volumeMounts` | additional volumeMounts for the daemonset | `{}`
 
