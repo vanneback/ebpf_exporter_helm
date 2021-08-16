@@ -1,0 +1,14 @@
+diff --git a/node_modules/semantic-release/lib/definitions/constants.js b/node_modules/semantic-release/lib/definitions/constants.js
+index 999999c..535640e 100644
+--- a/node_modules/semantic-release/lib/definitions/constants.js
++++ b/node_modules/semantic-release/lib/definitions/constants.js
+@@ -1,6 +1,8 @@
+ const RELEASE_TYPE = ['patch', 'minor', 'major'];
+ 
+-const FIRST_RELEASE = '1.0.0';
++// Override to ensure that the first published
++// ebpf_exporter release is 1.2.3.
++const FIRST_RELEASE = '1.2.3';
+ 
+ const FIRSTPRERELEASE = '1';
+ 

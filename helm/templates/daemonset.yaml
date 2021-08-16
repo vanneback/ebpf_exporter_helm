@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name  }}
+  labels:
+    app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "ebpf-exporter.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | trunc 63 }}
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{ toYaml . | trim | nindent 8 }}
+    {{- end }}
+    spec:
+      containers:
+      - name: {{ .Release.Name  }}
+        {{- with .Values.command }}
+        command:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
+        {{- with .Values.args }}
+        args:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
+        {{- with .Values.image }}
+        image: "{{ .repository }}:{{ .tag }}"
+        imagePullPolicy: {{ .pullPolicy }}
+        {{- end }}
+        ports:
+        - name: metrics
+          containerPort: 9435
+          protocol: TCP
+        volumeMounts:
+        {{- if not (empty .Values.volumeMounts) }}
+        {{- toYaml .Values.volumeMounts | trim | nindent 8 }}
+        {{- end }}
+        {{- if not (empty .Values.extraVolumeMounts) }}
+        {{- toYaml .Values.extraVolumeMounts | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.resources }}
+        resources:
+          {{- toYaml . | trim | nindent 10 }}
+        {{- end }}
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{ toYaml . | trim | nindent 10 }}
+        {{- end }}
+      dnsPolicy: ClusterFirst
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      {{- if not (empty .Values.volumes) }}
+        {{- toYaml .Values.volumes | trim | nindent 8 }}
+      {{- end }}
+      {{- if not (empty .Values.extraVolumes) }}
+        {{- toYaml .Values.extraVolumes | trim | nindent 8 }}
+      {{- end }}

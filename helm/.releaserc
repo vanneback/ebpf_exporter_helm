@@ -1,0 +1,78 @@
+{
+  "extends": [
+    "semantic-release-monorepo"
+  ],
+  "analyzeCommits": {
+    "releaseRules": [
+      {
+        "breaking": true,
+        "release": "minor"
+      }
+    ]
+  },
+  "branches": [
+    "+([0-9])?(.{+([0-9]),x}).x",
+    "main",
+    "next",
+    "next-major",
+    {
+      "name": "beta",
+      "prerelease": true
+    },
+    {
+      "name": "alpha",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": false
+      }
+    ],
+    [
+      "semantic-release-helm-version",
+      {
+        "chartPath": "./",
+        "packagePath": "../docker",
+        "versionProperty": "appVersion"
+      }
+    ],
+    [
+      "semantic-release-helm-version",
+      {
+        "chartPath": "./",
+        "packagePath": "./",
+        "versionProperty": "version"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md",
+          "Chart.yaml",
+          "package.json",
+          "package-lock.json"
+        ],
+        "message": "chore(helm): release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    "@semantic-release/github",
+    [
+      "@brpaz/semantic-release-helm",
+      {
+        "chartPath": ".",
+        "chartRepository": {
+          "branch": "gh-pages",
+          "url": "https://teacherspayteachers.github.io/helm-charts",
+          "repository": "teacherspayteachers/helm-charts"
+        }
+      }
+    ]
+  ]
+}

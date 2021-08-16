@@ -1,56 +1,131 @@
-# eBPF\_exporter
-A prometheus exporter for custom eBPF metrics.
+ebpf-exporter-deploy
+====================
 
-eBPF is an enchanment to BPF (Berkeley Packet Filter) and allow custom analysis
-programs to be executed on Linux tracing tools.
+Helm chart and Dockerfile to support running
+[ebpf\_exporter](https://github.com/cloudflare/ebpf_exporter) on Kubernetes.
 
-This helm chart provides an easier way to export these metrics from a kubernetes cluster
-and export it into prometheus.
+## Project Status
 
-## TL;DR;
+This project is:
 
-1. Download repo
-2. `helm install -n ebpf-exporter .`
+ * Maintained by Teachers Pay Teachers.
+ * Used in production by Teachers Pay Teachers.
 
-## Links
+## Versioning
 
-* [eBPF](http://www.brendangregg.com/ebpf.html)
-* [bcc](https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md)
-* [eBPF-exporter](https://github.com/cloudflare/ebpf_exporter)
+ * Docker image tags match [ebpf\_exporter
+   releases](https://github.com/cloudflare/ebpf_exporter/releases).
+ * The `apiVersion` of the Helm chart matches [ebpf\_exporter
+   releases](https://github.com/cloudflare/ebpf_exporter/releases).
+ * Helm `version` follows semantic versioning and increments when there are
+   changes to `values.yaml`.
 
-## Tested OS
-Since the bcc dependencies in the image are built for ubuntu the cluster will
-most likely only run on cluster running ubuntu.
+## Release Artifacts
 
-The tested OS is `Ubuntu 18.04 LTS, bionic` 
+ * GitHub releases are published with either a `ebpf-exporter-helm-` or `ebpf-exporter-docker-` prefix,
+   depending on whhat was changed.
+ * Docker images are published to [Dockerhub](https://hub.docker.com/r/teacherspayteachers/ebpf-exporter).
+ * Helm charts are published to [teacherspayteachers.github.io/helm-charts/](teacherspayteachers.github.io/helm-charts/)..
 
-## Configuration
+## Requirements
 
-The following table lists the configurable parameters of the chart and their default values.
+ * Docker is required to build Docker images.
+ * Helm is required to lint and template the Helm chart.
+ * Helm releases require hosts to have Linux kernel source code or headers.
+ * Helm releases require elevated security privileges.
 
-Parameter | Description | Default
---------- | ----------- | -------
-`image.repository` | image repository | `vanneback/ebpf-exporter`
-`image.tag` | image tag | `ubuntu`
-`image.pullPolicy` |  image pull policy | `IfNotPresent`
-`service.type` | service type | `ClusterIP`
-`service.port` | service port | `80`
-`service.annotations` | service annotations | `prometheus.io/scrape: \"true\"`
-`ingress.enabled` | set to true if the service should be backed by an ingress | `false`
-`ingress.annotations` | ingress annotations | `{}`
-`ingress.paths` | list of available paths to ingress | `[]`
-`ingress.hosts` | list of hosts to ingress | `chart-example.local`
-`ingress.tls` | tls config of ingress | `[]`
-`resources` | resource requests of the pods in the daemonset | `{}`
-`configMapFile` | the program file ebpf will use (will replace the default one if specified) | `{}`
-`podAnnotations` | annotations of pods in daemonset | `{}`
-`nodeSelector` | node selector rules | `{}`
-`tolerations` | node tolerations | `[]`
-`affinity` | pod affinity rules | `{}`
-`command` | supply alternate command to container | `{}`
-`volumes` | additional volumes for the daemonset | `{}`
-`volumeMounts` | additional volumeMounts for the daemonset | `{}`
+## Why
 
-## Docker file
-The docker file to build images can be located at
-<https://github.com/vanneback/ebpf_exporter_dockerfile>
+Cloudflare's [ebpf\_exporter](https://github.com/cloudflare/ebpf_exporter)
+makes it easy to extract Prometheus metrics from eBPF programs. However, it
+does not contain production-ready Docker images.
+
+[ebpf\_exporter\_helm](https://github.com/vanneback/ebpf_exporter_helm) is a
+community Helm chart for ebpf\_exporter.  However, the author has told us over
+email that it is not maintained.
+
+This repository contains a production-ready Docker image based on
+[ebpf\_exporter\_dockerfile](https://github.com/vanneback/ebpf_exporter_dockerfile),
+and a maintained Helm chart based on
+[ebpf\_exporter\_helm](https://github.com/vanneback/ebpf_exporter_helm).
+
+## Usage
+
+First, define a set of eBPF programs. See
+[ebpf\_exporter](https://github.com/cloudflare/ebpf_exporter#configuration-file-format)
+for the configuration format. Optionally, override any default values in
+`values.yaml`. For example:
+
+```
+config:
+- programs:
+  - name: cachestat
+    metrics:
+      counters:
+        - name: page_cache_ops_total
+          help: Page cache operation counters by type
+          table: counts
+          labels:
+            - name: op
+              size: 8
+              decoders:
+                - name: ksym
+            - name: command
+              size: 128
+              decoders:
+                - name: string
+                - name: regexp
+                  regexps:
+                    - ^systemd-journal$
+                    - ^syslog-ng$
+    kprobes:
+      add_to_page_cache_lru: do_count
+      mark_page_accessed: do_count
+      account_page_dirtied: do_count
+      mark_buffer_dirty: do_count
+    code: |
+      #include <uapi/linux/ptrace.h>
+  
+      struct key_t {
+          u64 ip;
+          char command[128];
+      };
+  
+      BPF_HASH(counts, struct key_t);
+  
+      int do_count(struct pt_regs *ctx) {
+          struct key_t key = { .ip = PT_REGS_IP(ctx) - 1 };
+          bpf_get_current_comm(&key.command, sizeof(key.command));
+  
+          counts.increment(key);
+  
+          return 0;
+      }
+```
+
+Next, supply the programs to the Helm install command.
+
+```shell
+$ helm repo helm repo add tpt https://teacherspayteachers.github.io/helm-charts
+$ helm install ebpf-exporter tpt/ebpf-exporter -f values.yaml
+```
+
+## Metrics
+
+See [ebpf\_exporter](https://github.com/cloudflare/ebpf_exporter) to understand
+how exported Prometheus metrics work.
+
+## Alternatives
+
+ * Cloudflare deploys [ebpf\_exporter](https://github.com/cloudflare/ebpf_exporter/issues/82#issuecomment-731428957)
+   directly on hosts in order to avoid having to bind-mount kernel sources and headers into Docker containers.
+ * [Helm chart](https://github.com/vanneback/ebpf_exporter_helm) that this repository's Helm chart is based on.
+ * Alternative [Dockerfile](https://github.com/vanneback/ebpf_exporter_dockerfile).
+
+## Contributing
+
+Contributions are very welcome! Please see [CONTRIBUTING.md](https://github.com/TeachersPayTeachers/linux-audit-exporter/blob/main/CONTRIBUTING.md).
+
+## License
+
+[MIT](https://github.com/TeachersPayTeachers/linux-audit-exporter/blob/main/LICENSE.md)

@@ -1,0 +1,24 @@
+project:
+  name: ebpf-exporter
+  shortName: ebpf-exporter
+  url: https://github.com/teacherspayteachers/ebpf-exporter-deploy
+  description: |
+    Export your eBPF metrics in Prometheus format using ebpf_exporter.
+   
+    Original credits for this Helm chart go to [Emil Vanneback](https://github.com/vanneback/ebpf_exporter_helm).
+    Note: there are breaking changes between the version 0.1.0 of that project and the first version (0.2.0) of this
+    project.
+  app: a Prometheus exporter for custom eBPF metrics
+repository:
+  url: https://teacherspayteachers.github.io/helm-charts
+  name: tpt
+chart:
+  name: ebpf-exporter
+  version:
+  values: "-- generate from values file --"
+  valuesExample: "-- generate from values file --"
+prerequisites:
+- K8s host running Linux kernel with kernel sources
+release:
+  name: ebpf-exporter
+  namespace: kube-system

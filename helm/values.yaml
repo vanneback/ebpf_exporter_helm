@@ -1,0 +1,88 @@
+# Specify Pod affinity constraints.
+affinity: {}
+# Args to pass to ebpf_exporter.
+args:
+  - --config.file
+  - /etc/ebpf_exporter/config.yaml
+  - --web.listen-address
+  - 0.0.0.0:9435
+# Path to ebpf_exporter.
+command:
+  - /usr/local/bin/ebpf_exporter
+# See https://github.com/cloudflare/ebpf_exporter#configuration-file-format
+# for configuration format.
+config: []
+# Extra volumeMounts.
+extraVolumeMounts: []
+# Extra volumes.
+extraVolumes: []
+# Full name override.
+fullnameOverride: ""
+image:
+  # Docker image pull policy.
+  pullPolicy: IfNotPresent
+  # Docker image registry.
+  registry: docker.io
+  # Docker image repository.
+  repository: teacherspayteachers/ebpf-exporter
+  # Docker image tag.
+  tag: 1.2.3
+ingress:
+  # Enable or disable Ingress.
+  enabled: false
+  # Ingress annotations.
+  annotations: {}
+  paths: []
+  hosts: []
+  tls: []
+# Name override.
+nameOverride: ""
+# Node selector.
+nodeSelector: {}
+# Pod annotations.
+podAnnotations: {}
+# Container resources.
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+  #
+securityContext:
+  # ebpf_exporter requires elevated privileges.
+  privileged: true
+service:
+  type: ClusterIP
+  port: 80
+  # Add service annotations.
+  annotations: {}
+# Specify taint tolerations.
+tolerations: []
+# Default volumeMounts for the daemonset.
+volumeMounts:
+  - mountPath: /etc/ebpf_exporter
+    name: config
+  - mountPath: /sys/kernel/debug
+    name: kernel
+  - mountPath: /lib/modules/
+    name: modules
+# Default volumes for the daemonset.
+volumes:
+  - configMap:
+      defaultMode: 420
+      name: ebpf-exporter
+    name: config
+  - hostPath:
+      path: /sys/kernel/debug
+      type: Directory
+    name: kernel
+  - hostPath:
+      path: /lib/modules/
+      type: Directory
+    name: modules
